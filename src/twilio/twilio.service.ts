@@ -39,7 +39,6 @@ export class TwilioService {
                 return;
             }
 
-
             let payloadInputUser = null
             if(body.NumMedia == Constant.TWILIO_TYPE_TEXT) {
                 payloadInputUser = {
@@ -76,20 +75,24 @@ export class TwilioService {
                 }
             }
 
-            const response = await this.watsonService.message(payloadInputUser.text, watsonPayload)
+            let watsonResponse = await this.watsonService.message(payloadInputUser.text, watsonPayload)
 
+            if(watsonResponse?.code === Constant.WATSON_EXPIRED_SESSION) {
+                watsonPayload.session_id = await this.watsonService.createSession()
+                watsonResponse = await this.watsonService.message(payloadInputUser.text, watsonPayload)
+            }
             
             /**
              * Enviar a resposta do Assistant para a Twilio
             */
-           if (response?.output?.generic) {
-                await this.fileService.salvarArquivoJson({[userPhoneNumber]: response})
+           if (watsonResponse?.output?.generic) {
+                await this.fileService.salvarArquivoJson({[userPhoneNumber]: watsonResponse})
 
                 //TODO subistituir map poor for
                 this.logger.log("message delivered")
 
                 let mCounter = 0
-                for (const message of response.output.generic) {
+                for (const message of watsonResponse.output.generic) {
                     setTimeout(
                         async() => { 
                             if(payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {

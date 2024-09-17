@@ -62,7 +62,6 @@ export class FileService {
                 allData = {}
             }
 
-
             fs.writeFileSync(this.path, JSON.stringify(allData, null, 2)); // Converte o objeto em JSON e salva
             console.log("Arquivo salvo com sucesso!");
         } catch (err) {
