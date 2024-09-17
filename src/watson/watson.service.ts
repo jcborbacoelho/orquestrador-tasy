@@ -20,41 +20,38 @@ export class WatsonService {
     });
   }
 
-  async createSession(): Promise<string> {
-    return await this.assistantV2
-      .createSession({
-        assistantId: process.env.WATSON_ASSISTANT_ID,
-      })
-      .then((res) => {
-        return res.result.session_id;
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }
-
-  async message(
-    brokerInput: string,
-    watsonConfig: WatsonConfigDto,
-  ): Promise<any> {
-    try {
-      const payload = {
-        assistantId: process.env.WATSON_ASSISTANT_ID,
-        sessionId: watsonConfig.session_id,
-        userId: watsonConfig?.context?.global.system.user_id ?? null,
-        input: {
-          message_type: 'text',
-          text: brokerInput,
-          options: { return_context: true },
-        },
-        context: watsonConfig?.context ?? {},
-      };
-
-      const watsonResponse = await this.assistantV2.message(payload);
-
-      return watsonResponse.result;
-    } catch (error) {
-      console.log(error);
+    async createSession(): Promise<string> {
+        return await this.assistantV2.createSession({
+            assistantId: process.env.WATSON_ENVIRONMENT_ID
+        }).then(res => {
+            return res.result.session_id
+        }).catch(err => {
+            console.log(err)
+        })
     }
-  }
+
+    async message(brokerInput: string, watsonConfig: WatsonConfigDto): Promise<any> {
+        try {
+            const payload = {
+                assistantId: process.env.WATSON_ENVIRONMENT_ID,
+                sessionId: watsonConfig.session_id,
+                input: {
+                    message_type: 'text',
+                    text: brokerInput,
+                    options: { return_context: true },
+                },
+                context: watsonConfig?.context ?? {}
+            }
+
+            if(watsonConfig.context?.global?.system?.user_id) {
+                payload['userId'] = watsonConfig.context.global.system.user_id
+            }
+
+            const watsonResponse = await this.assistantV2.message(payload)  
+            
+            return watsonResponse.result
+        } catch (error) {
+            return error
+        }
+    }
 }

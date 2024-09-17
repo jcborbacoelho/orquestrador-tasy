@@ -42,20 +42,20 @@ export class TwilioService {
         await this.fileService.salvarArquivoJson({});
         await this.sendMessage(body.From, body.To, 'Contexto apagado...');
 
-        return;
-      }
+                return;
+            }
 
-      let payloadInputUser = null;
-      if (body.NumMedia == Constant.TWILIO_TYPE_TEXT) {
-        payloadInputUser = {
-          type: Constant.BROKER_TYPE_TEXT,
-          text: body.Body,
-        };
-      } else if (body.NumMedia == Constant.TWILIO_TYPE_FILE) {
-        /**
-         * Transcrever audio para texto utilizando o STT
-         */
-        const stt: any = '';
+            let payloadInputUser = null
+            if(body.NumMedia == Constant.TWILIO_TYPE_TEXT) {
+                payloadInputUser = {
+                    type: Constant.BROKER_TYPE_TEXT,
+                    text: body.Body
+                }
+            } else if(body.NumMedia == Constant.TWILIO_TYPE_FILE) {
+                /**
+                 * Transcrever audio para texto utilizando o STT
+                 */
+                const stt: any = ""
 
         payloadInputUser = {
           type: Constant.BROKER_TYPE_AUDIO,
@@ -81,34 +81,37 @@ export class TwilioService {
         };
       }
 
-      const response = await this.watsonService.message(
-        payloadInputUser.text,
-        watsonPayload,
-      );
+            let watsonResponse = await this.watsonService.message(payloadInputUser.text, watsonPayload)
 
-      /**
-       * Enviar a resposta do Assistant para a Twilio
-       */
-      if (response?.output?.generic) {
-        await this.fileService.salvarArquivoJson({
-          [userPhoneNumber]: response,
-        });
+            if(watsonResponse?.code === Constant.WATSON_EXPIRED_SESSION) {
+                watsonPayload.session_id = await this.watsonService.createSession()
+                watsonResponse = await this.watsonService.message(payloadInputUser.text, watsonPayload)
+            }
+            
+            /**
+             * Enviar a resposta do Assistant para a Twilio
+            */
+           if (watsonResponse?.output?.generic) {
+                await this.fileService.salvarArquivoJson({[userPhoneNumber]: watsonResponse})
 
         //TODO subistituir map poor for
         this.logger.log('message delivered');
 
-        let mCounter = 0;
-        for (const message of response.output.generic) {
-          setTimeout(async () => {
-            if (payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {
-              await this.sendAudio(body.From, body.To, message.text);
-            } else if (payloadInputUser.type == Constant.BROKER_TYPE_TEXT) {
-              await this.sendMessage(body.From, body.To, message.text);
+                let mCounter = 0
+                for (const message of watsonResponse.output.generic) {
+                    setTimeout(
+                        async() => { 
+                            if(payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {
+                                await this.sendAudio(body.From, body.To, message.text)
+                            } else if(payloadInputUser.type == Constant.BROKER_TYPE_TEXT) {
+                                await this.sendMessage(body.From, body.To, message.text)
+                            }
+                        },
+                        mCounter * 500
+                    )
+                    mCounter++
+                }     
             }
-          }, mCounter * 500);
-          mCounter++;
-        }
-      }
 
       /**
        * Apagar arquivo de audio temporário

@@ -56,11 +56,11 @@ export class FileService {
       let key = Object.keys(objectContext)[0];
       let value = Object.values(objectContext)[0];
 
-      if (key && value) {
-        allData[key] = value;
-      } else {
-        allData = {};
-      }
+            if(key && value) {                
+                allData[key] = value
+            } else {
+                allData = {}
+            }
 
       fs.writeFileSync(this.path, JSON.stringify(allData, null, 2)); // Converte o objeto em JSON e salva
       console.log('Arquivo salvo com sucesso!');
