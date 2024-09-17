@@ -1,43 +1,40 @@
-import { IsObject, IsString } from "class-validator";
+import { IsObject, IsString } from 'class-validator';
 
 class WatsonAssistantDto {
-    @IsObject()
-    output: {
-        intents?: [],
-        entities?: [],
-        generic?: []
-    }
+  @IsObject()
+  output: {
+    intents?: [];
+    entities?: [];
+    generic?: [];
+  };
 
-    @IsString()
-    user_id: string
+  @IsString()
+  user_id: string;
 
-    @IsObject()
-    context: {
-        global?: {
-            system?: {
-                session_start_time ?: string,
-                turn_count ?: number,
-                user_id ?: string,
-                state ?: string
-            },
-            session_id?: string
-        },
-        skills?: object
-    }
+  @IsObject()
+  context: {
+    global?: {
+      system?: {
+        session_start_time?: string;
+        turn_count?: number;
+        user_id?: string;
+        state?: string;
+      };
+      session_id?: string;
+    };
+    skills?: object;
+  };
 }
 
-class WatsonConfigDto{
-    @IsString()
-    user_id: string = ""
+class WatsonConfigDto {
+  @IsString()
+  user_id: string = '';
 
-    @IsString()
-    session_id: string = ""
+  @IsString()
+  session_id: string = '';
 
-    @IsObject()
-    context: {} | any
+  @IsObject()
+  context: {} | any;
 }
 
-export {
-    WatsonAssistantDto,
-    WatsonConfigDto
-}
+export { WatsonAssistantDto, WatsonConfigDto };

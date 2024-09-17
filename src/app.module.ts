@@ -9,11 +9,11 @@ import { FileModule } from './file/file.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true
+      isGlobal: true,
     }),
     TwilioModule,
     WatsonModule,
-    FileModule
+    FileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -5,11 +5,8 @@ import { WatsonModule } from 'src/watson/watson.module';
 import { FileModule } from 'src/file/file.module';
 
 @Module({
-  imports:[
-    WatsonModule,
-    FileModule
-  ],
+  imports: [WatsonModule, FileModule],
   controllers: [TwilioController],
-  providers: [TwilioService]
+  providers: [TwilioService],
 })
 export class TwilioModule {}

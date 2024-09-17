@@ -4,13 +4,11 @@ import { TwilioService } from './twilio.service';
 
 @Controller('twilio')
 export class TwilioController {
-    constructor(
-        private readonly twilioService: TwilioService
-    ){}
+  constructor(private readonly twilioService: TwilioService) {}
 
-    @Post('message')
-    async twilio(@Body() body: TwilioRequestDTO): Promise<any> {
-        await this.twilioService.run(body)
-        return {message: 'Success'}
-    }
+  @Post('message')
+  async twilio(@Body() body: TwilioRequestDTO): Promise<any> {
+    await this.twilioService.run(body);
+    return { message: 'Success' };
+  }
 }
