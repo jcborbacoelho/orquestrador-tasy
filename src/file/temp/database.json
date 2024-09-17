@@ -1,0 +1,42 @@
+{
+  "556799035847": {
+    "output": {
+      "intents": [
+        {
+          "intent": "action_16700_intent_6983",
+          "confidence": 1
+        }
+      ],
+      "entities": [],
+      "generic": [
+        {
+          "response_type": "text",
+          "text": "Olá, seja bem-vindo. Em que posso ajudar?"
+        }
+      ]
+    },
+    "user_id": "8fc9a6a7-89fe-476e-9cf2-2e71611ed82c",
+    "context": {
+      "global": {
+        "system": {
+          "session_start_time": "2024-09-17T07:43:41.822Z",
+          "turn_count": 1,
+          "user_id": "8fc9a6a7-89fe-476e-9cf2-2e71611ed82c",
+          "state": "eyJuYW1lIjoibGl2ZSIsInNraWxscyI6W3siY29uZmlnIjp7Im1lc3NhZ2UiOm51bGwsInZlcnNpb24iOiIyMDE4LTEyLTAzIiwiaGlnaGxpZ2h0IjpudWxsLCJpbnN0YW5jZV9pZCI6bnVsbCwiY29sbGVjdGlvbl9pZCI6bnVsbCwiZGlzY292ZXJ5X3VybCI6bnVsbCwiZXJyb3JfbWVzc2FnZSI6bnVsbCwiZW52aXJvbm1lbnRfaWQiOm51bGwsInJlc3VsdHNfcGVyX3BhZ2UiOm51bGwsIm1heF90b3RhbF9yZXN1bHRzIjpudWxsLCJub19yZXN1bHRfbWVzc2FnZSI6bnVsbCwicGFnaW5hdGlvbl9lbmFibGVkIjpmYWxzZSwibWF4X3ByaW1hcnlfcmVzdWx0cyI6bnVsbCwic2NoZW1hX21hcHBpbmdfYm9keSI6bnVsbCwiYmFzaWNfYXV0aGVudGljYXRpb24iOm51bGwsInNjaGVtYV9tYXBwaW5nX3RpdGxlIjpudWxsLCJjdXN0b21fc2NoZW1hX21hcHBpbmdzIjpudWxsfSwiZGlzYWJsZWQiOnRydWUsImxhbmd1YWdlIjoieHgiLCJza2lsbF9pZCI6ImQ0YWUzMjM1LTFmYmUtNDM3NC1hMmExLWM5MmI5ODhjYmFiNiIsInNraWxsX3R5cGUiOiJzZWFyY2giLCJza2lsbF9yZWZlcmVuY2UiOiJzZWFyY2ggc2tpbGwiLCJzeXN0ZW1fc2V0dGluZ3MiOnsidG9waWNfc3dpdGNoIjp7ImRpZ3Jlc3Npb25faGFuZGxlciI6bnVsbH0sImdlbmVyYXRpdmVfYWkiOnsibW9kZWxfaWQiOm51bGwsImhhcF9maWx0ZXIiOm51bGwsInByb21wdF9pbnN0cnVjdGlvbiI6bnVsbH19LCJza2lsbF9zbmFwc2hvdF9pZCI6bnVsbCwic2tpbGxfc25hcHNob3RfbmFtZSI6bnVsbH0seyJjb25maWciOnsiYWN0aW9ucyI6dHJ1ZSwid29ya3NwYWNlX2lkIjoiZDdiYWJkNzMtN2E2NS00N2RlLTkxNTYtYTNhZmJjNjcwYmE5Iiwic2tpbGxfcmVmZXJlbmNlX2lkIjoiYjE3NmZmMmUtY2M5MS00NzkyLWFlZTYtZTQ3ZjJhZjIxYWE4In0sImRpc2FibGVkIjpudWxsLCJsYW5ndWFnZSI6InB0LWJyIiwic2tpbGxfaWQiOiJkN2JhYmQ3My03YTY1LTQ3ZGUtOTE1Ni1hM2FmYmM2NzBiYTkiLCJza2lsbF90eXBlIjoiYWN0aW9uIiwic2tpbGxfcmVmZXJlbmNlIjoiYWN0aW9ucyBza2lsbCIsInN5c3RlbV9zZXR0aW5ncyI6eyJ0b3BpY19zd2l0Y2giOnsiZGlncmVzc2lvbl9oYW5kbGVyIjpudWxsfSwiZ2VuZXJhdGl2ZV9haSI6eyJtb2RlbF9pZCI6bnVsbCwiaGFwX2ZpbHRlciI6bnVsbCwicHJvbXB0X2luc3RydWN0aW9uIjpudWxsfX0sInNraWxsX3NuYXBzaG90X2lkIjoiYTYxOTE5ZjktY2FiNS00MGQ2LTkxMDEtZWE5NjU0NDMwMzdmIiwic2tpbGxfc25hcHNob3RfbmFtZSI6IjEifV0sImxhbmd1YWdlIjoicHQtYnIiLCJwcm92aWRlcnMiOltdLCJydW50aW1lX2lkIjoiNmVjMjM2MWUtYjEwNC00MTlkLWJjZjItYWUzNTllYjFmMDU1IiwiZW52aXJvbm1lbnQiOiJsaXZlIiwiaW5zdGFuY2VfaWQiOiI2NTRlNTE2OC1iMjMyLTQzYTgtODhmZS1mNzAzMWNjNTA5YmEiLCJhc3Npc3RhbnRfaWQiOiI2MjVlMjk1NS0zZjY4LTRhMTktYTAxMS03YmIyYzE0NTZjMjkiLCJjZXJ0aWZpY2F0ZXMiOltdLCJlbnZpcm9ubWVudF9pZCI6IjZlYzIzNjFlLWIxMDQtNDE5ZC1iY2YyLWFlMzU5ZWIxZjA1NSIsImRpc2FibGVfZmFsbGJhY2siOnRydWUsInBhcmVudF9hc3Npc3RhbnRfaWQiOiI2MjVlMjk1NS0zZjY4LTRhMTktYTAxMS03YmIyYzE0NTZjMjkiLCJjZXJ0aWZpY2F0aW9uX21ldGhvZCI6InVuYXV0aG9yaXplZCIsImRpc2FibGVfc2Vzc2lvbl9oaXN0b3J5IjpmYWxzZSwic2Vzc2lvbl9oaXN0b3J5IjpbeyJ1IjoiT2kiLCJuIjp0cnVlfSx7ImEiOiJPbMOhLCBzZWphIGJlbS12aW5kby4gRW0gcXVlIHBvc3NvIGFqdWRhcj8ifV0sImFjdGl2ZV9za2lsbCI6ImFjdGlvbnMgc2tpbGwifQ=="
+        },
+        "session_id": "8fc9a6a7-89fe-476e-9cf2-2e71611ed82c"
+      },
+      "skills": {
+        "actions skill": {
+          "action_variables": {},
+          "skill_variables": {
+            "leitosHigienizacao": false,
+            "leitosManutencao": false,
+            "ocupacaoLeitos": false
+          },
+          "system": {}
+        }
+      }
+    }
+  }
+}
