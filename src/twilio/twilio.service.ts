@@ -4,6 +4,17 @@ import { TextNormalizer } from 'src/helpers/common';
 import { Constant } from 'src/helpers/constant';
 import { WatsonService } from 'src/watson/watson.service';
 import { Twilio } from 'twilio';
+import * as fs from 'fs';
+import * as tmp from 'tmp';
+import axios from 'axios';
+import { HttpService } from '@nestjs/axios';
+import { ReadStream } from 'fs';
+import { MediaInstance } from 'twilio/lib/rest/intelligence/v2/transcript/media';
+import { Readable } from 'stream';
+import { promisify } from 'util';
+import * as path from 'path';
+import async from 'async';
+import { from } from 'ibm-watson/lib/recognize-stream';
 
 @Injectable()
 export class TwilioService {
@@ -51,16 +62,23 @@ export class TwilioService {
           type: Constant.BROKER_TYPE_TEXT,
           text: body.Body,
         };
-      } else if (body.NumMedia == Constant.TWILIO_TYPE_FILE) {
-        /**
-         * Transcrever audio para texto utilizando o STT
-         */
-        const stt: any = '';
-
+      } else if (
+        body.NumMedia == Constant.TWILIO_TYPE_FILE &&
+        body.MediaContentType0 == 'audio/ogg'
+      ) {
+        const textOutput = await this.watsonService.STT(
+          await this.getAudioBufferFromTwillioURL(body.MediaUrl0), //fs.createReadStream('teste.ogg'),
+        );
+        await this.sendAudio(
+          'whatsapp:+5511985054202',
+          'whatsapp:+18597805666',
+          textOutput,
+        ); //Germano Teste
         payloadInputUser = {
           type: Constant.BROKER_TYPE_AUDIO,
-          text: stt.text,
+          text: textOutput,
         };
+        return;
       }
 
       /**
@@ -118,18 +136,67 @@ export class TwilioService {
     }
   }
 
-  async sendAudio(to: string, from: string, message) {
-    /**
-     * Converter o texto para audio - TTS
-     */
+  async getAudioBufferFromTwillioURL(audioUrl: string): Promise<Buffer> {
+    try {
+      // Download the audio file
+      const response = await axios.get(audioUrl, {
+        headers: {
+          Authorization:
+            'Basic ' +
+            Buffer.from(
+              `${process.env.TWILIO_SID}:${process.env.TWILIO_AUTH}`,
+            ).toString('base64'),
+        },
+        responseType: 'arraybuffer', // Get the response as an ArrayBuffer
+      });
+      // Create a Buffer from the response data
+      const audioBuffer = Buffer.from(response.data);
+      return audioBuffer;
+    } catch (error) {
+      console.error('Error downloading audio:', error);
+      throw error;
+    }
+  }
+  async streamToFile(readableStream, fileName) {
+    // Create a response from the ReadableStream
+    const response = new Response(readableStream);
 
-    this.client.messages
-      .create({
+    // Convert the response to a Blob
+    const blob = await response.blob();
+
+    // Create a file from the Blob
+    const file = new File([blob], fileName, { type: blob.type });
+
+    return file;
+  }
+
+  //Germano TODO: Função problemática //2 problemas: aceite do arquivo e tranformacao do arquivo
+  async sendAudio(to: string, from: string, textInput: string) {
+    /*const speakOutputStream: ReadableStream = await this.watsonService.TTS(
+      textInput,
+    );*/
+    try {
+      // Send the message with the media URL pointing to the temporary file
+      const message = await this.client.messages.create({
+        sendAsMms: true,
         from,
-        body: '',
+        mediaUrl: [
+          'https://filesamples.com/samples/audio/opus/sample3.opus',
+          //'https://opus-codec.org/static/examples/ehren-paper_lights-96.opus',//nao ok
+          //'https://opus-codec.org/static/examples/samples/plc_orig.wav',//nao ok
+          //'https://upload.wikimedia.org/wikipedia/commons/c/c8/Example.ogg',//nao ok
+          //'https://file-examples.com/wp-content/storage/2017/11/file_example_MP3_700KB.mp3',//nao ok
+          //'https://edisciplinas.usp.br/pluginfile.php/5196097/mod_resource/content/1/Teste.mp4', //ok
+          //'https://file-examples.com/wp-content/storage/2017/11/file_example_WAV_1MG.wav', //nao ok
+          //'https://upload.wikimedia.org/wikipedia/en/7/7d/Microphone_Test.ogg' //nao ok
+          //'https://superdominios.org/wp-content/uploads/2019/06/dominio-online.jpg',//ok
+        ], //[pathToFile],
         to,
-      })
-      .catch((err) => this.logger.error('error, message not sent', err));
+      });
+
+      console.log(message.sid);
+    } finally {
+    }
   }
 
   async sendMessage(to: string, from: string, message: string) {
