@@ -12,6 +12,7 @@ export const Constant = {
   TWILIO_TYPE_TEXT: 0,
   TWILIO_TYPE_FILE: 1,
   TWILIO_TYPE_FILE_AUDIO: 'audio',
+  TWILIO_CONTENT_TYPE: 'audio/ogg',
   CHANNEL_TWILIO: 'Channel::Twilio::Whatsapp',
 
   /**
