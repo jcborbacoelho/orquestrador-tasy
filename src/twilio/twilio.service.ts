@@ -165,25 +165,36 @@ export class TwilioService {
           textInput,
         );*/
         try {
-            // Send the message with the media URL pointing to the temporary file
-            const message = await this.client.messages.create({
-                sendAsMms: true,
-                from,
-                mediaUrl: [
-                    'https://filesamples.com/samples/audio/opus/sample3.opus',
-                    //'https://opus-codec.org/static/examples/ehren-paper_lights-96.opus',//nao ok
-                    //'https://opus-codec.org/static/examples/samples/plc_orig.wav',//nao ok
-                    //'https://upload.wikimedia.org/wikipedia/commons/c/c8/Example.ogg',//nao ok
-                    //'https://file-examples.com/wp-content/storage/2017/11/file_example_MP3_700KB.mp3',//nao ok
-                    //'https://edisciplinas.usp.br/pluginfile.php/5196097/mod_resource/content/1/Teste.mp4', //ok
-                    //'https://file-examples.com/wp-content/storage/2017/11/file_example_WAV_1MG.wav', //nao ok
-                    //'https://upload.wikimedia.org/wikipedia/en/7/7d/Microphone_Test.ogg' //nao ok
-                    //'https://superdominios.org/wp-content/uploads/2019/06/dominio-online.jpg',//ok
-                ], //[pathToFile],
-                to,
+            const url = `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_SID}/Messages.json`;
+
+            const data = new URLSearchParams();
+            data.append('From', from);
+            data.append('To', to);
+            data.append(
+              'MediaUrl',
+              'https://tasy-audio.s3.us-south.cloud-object-storage.appdomain.cloud/teste-ogg-opus.ogg',
+            );
+
+            const response = await fetch(url, {
+              method: 'POST',
+              headers: {
+                Authorization:
+                  'Basic ' +
+                  btoa(`${process.env.TWILIO_SID}:${process.env.TWILIO_AUTH}`),
+                'Content-Type': 'audio/ogg; codecs=opus',
+              },
+              body: data,
             });
 
-            console.log(message.sid);
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(
+                `Error sending message: ${response.status} ${errorText}`,
+              );
+            }
+
+            const responseData = await response.json();
+            console.log('Message sent successfully:', responseData);
         } finally {
         }
     }
