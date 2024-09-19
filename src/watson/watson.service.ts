@@ -15,11 +15,11 @@ import { Stream } from 'stream';
 
 @Injectable()
 export class WatsonService {
-  private assistantV2;
+  private assistantV2: AssistantV2;
 
   constructor() {}
 
-  async createInstance() {
+  private async createInstance() {
     this.assistantV2 = await new AssistantV2({
       version: Constant.WATSON_VERSION,
       authenticator: new IamAuthenticator({
@@ -29,7 +29,7 @@ export class WatsonService {
     });
   }
 
-  async createSession(): Promise<string> {
+  private async createSession(): Promise<string> {
     return await this.assistantV2
       .createSession({
         assistantId: process.env.WATSON_ENVIRONMENT_ID,
@@ -39,13 +39,14 @@ export class WatsonService {
       })
       .catch((err) => {
         console.log(err);
+        return '';
       });
   }
 
-  async message(
+  private async message(
     brokerInput: string,
     watsonConfig: WatsonConfigDto,
-  ): Promise<any> {
+  ): Promise<AssistantV2.MessageResponse> {
     try {
       const payload = {
         assistantId: process.env.WATSON_ENVIRONMENT_ID,
@@ -69,6 +70,42 @@ export class WatsonService {
       console.log(error);
     }
   }
+
+  async sendAssistantMessageWithContext(
+    watsonContext: any,
+    userId: any,
+    text: string,
+  ): Promise<any> {
+    await this.createInstance();
+    let watsonPayload: WatsonConfigDto = null;
+    ////RECUPERA SESSAO DO SOLICITANTE OU CRIA NOVA SE NAO HOUVER
+    if (watsonContext) {
+      watsonPayload = {
+        user_id: userId,
+        session_id: watsonContext.context.global.session_id,
+        context: watsonContext.context,
+      };
+    } else {
+      watsonPayload = {
+        user_id: '',
+        session_id: await this.createSession(),
+        context: {},
+      };
+    }
+    ///ENVIAR MENSAGEM WATSON ASSISTANT
+    let watsonResponse: any = await this.message(text, watsonPayload);
+    ///SE WATSON ASSISTANT REPORTAR SESSAO EXPIRADA, ENVIA NOVA MENSAGEM COM NOVO CONTEXTO
+    if (watsonResponse?.code === Constant.WATSON_EXPIRED_SESSION) {
+      watsonPayload.session_id = await this.createSession();
+      watsonResponse = await this.message(text, watsonPayload);
+    }
+    return watsonResponse;
+  }
+  /**
+   * Speach-To-Text: Executa conversão de Buffer com áudio ogg em texto
+   * @param InputSpeak áudio (.ogg)
+   * @returns transcrição
+   */
   async STT(InputSpeak: Buffer): Promise<string> {
     /**
      * Transcrever audio para texto utilizando o STT
@@ -104,8 +141,12 @@ export class WatsonService {
     return textOutput;
   }
 
+  /**
+   * Text-To-Speech: Executa sintetização de texto em voz robótica
+   * @param textInput texto para sintetizar
+   * @returns voz sintetizada em formato ogg
+   */
   async TTS(textInput: string): Promise<ReadableStream> {
-    //TTS teste germano
     const textToSpeech = new TextToSpeechV1({
       authenticator: new IamAuthenticator({
         apikey: process.env.WATSON_API_KEY_TTS,
