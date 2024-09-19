@@ -8,6 +8,6 @@ export class AlexaController {
 
   @Post('message')
   async twilio(@Body() body: AlexaRequestDTO): Promise<any> {
-    return await this.alexaService.run(body);
+    return { message: await this.alexaService.run(body) };
   }
 }
