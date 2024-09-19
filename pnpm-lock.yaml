@@ -4751,7 +4751,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ibm-watson@9.1.0:
+  ibm-cos-sdk@1.13.4:
+    dependencies:
+      buffer: 4.9.2
+      jmespath: 0.16.0
+      url: 0.11.4
+      util: 0.12.5
+      uuid: 8.3.2
+      xml2js: 0.6.2
+      xmlbuilder: 10.1.1
+
+  ibm-watson@8.0.0:
     dependencies:
       '@types/async': 3.2.24
       '@types/extend': 3.0.4

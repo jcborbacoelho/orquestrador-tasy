@@ -13,13 +13,13 @@ export class S3Service {
         }
     }
 
-    async uploadFile(buffer, filename) {
+    async uploadFile(buffer, filename: string) {
         const cos = new IBM.S3(this.config)
         const params = {
             Bucket: 'tasy-audio',  // Nome do bucket
             Key: `${filename}.ogg`,      // Nome do arquivo
             Body: buffer,
-            ContentType: 'audio/ogg',   // Tipo de conteúdo
+            ContentType: 'audio/ogg; codecs=opus',   // Tipo de conteúdo
             ACL: 'public-read',         // Deixe o arquivo público para acesso
         };
 

@@ -5,6 +5,7 @@ import { Constant } from 'src/helpers/constant';
 import { WatsonService } from 'src/watson/watson.service';
 import { Twilio } from 'twilio';
 import axios from 'axios';
+import { S3Service } from 'src/watson/s3/s3.service';
 
 @Injectable()
 export class TwilioService {
@@ -14,9 +15,12 @@ export class TwilioService {
     constructor(
         private readonly watsonService: WatsonService,
         private readonly fileService: FileService,
+        private readonly s3Service: S3Service,
     ) { }
 
     async run(body): Promise<any> {
+        // await this.sendAudio(body.From, body.To, "Apenas testando", body.MessageSid);
+        // return;
         try {
             this.logger.log('broker started');
 
@@ -93,10 +97,11 @@ export class TwilioService {
                     watsonPayload,
                 );
             }
+            
             /**
              * Enviar a resposta do Assistant para a Twilio
              */
-            if (watsonResponse?.output?.generic) {
+            if (watsonResponse?.output?.generic && watsonResponse?.output?.generic.length) {
                 await this.fileService.salvarArquivoJson({
                     [userPhoneNumber]: watsonResponse,
                 });
@@ -108,7 +113,7 @@ export class TwilioService {
                 for (const message of watsonResponse.output.generic) {
                     setTimeout(async () => {
                         if (payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {
-                            await this.sendAudio(body.From, body.To, message.text);
+                            await this.sendAudio(body.From, body.To, message.text, body.MessageSid);
                         } else if (payloadInputUser.type == Constant.BROKER_TYPE_TEXT) {
                             await this.sendMessage(body.From, body.To, message.text);
                         }
@@ -160,10 +165,12 @@ export class TwilioService {
     }
 
     //Germano TODO: Função problemática //2 problemas: aceite do arquivo e tranformacao do arquivo
-    async sendAudio(to: string, from: string, textInput: string) {
-        /*const speakOutputStream: ReadableStream = await this.watsonService.TTS(
+    async sendAudio(to: string, from: string, textInput: string, messageId: string) {
+        const speakOutputStream: ReadableStream = await this.watsonService.TTS(
           textInput,
-        );*/
+        );
+
+        const urlSpeakOutputStream = await this.s3Service.uploadFile(speakOutputStream, messageId)
         try {
             const url = `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_SID}/Messages.json`;
 
@@ -172,7 +179,7 @@ export class TwilioService {
             data.append('To', to);
             data.append(
               'MediaUrl',
-              'https://tasy-audio.s3.us-south.cloud-object-storage.appdomain.cloud/teste-ogg-opus.ogg',
+              urlSpeakOutputStream,
             );
 
             const response = await fetch(url, {
@@ -195,7 +202,8 @@ export class TwilioService {
 
             const responseData = await response.json();
             console.log('Message sent successfully:', responseData);
-        } finally {
+        } catch(err) {
+            console.error(err)
         }
     }
 
@@ -204,7 +212,6 @@ export class TwilioService {
             .create({
                 from,
                 body: TextNormalizer(Constant.CHANNEL_TWILIO, message),
-                // mediaUrl: "https://www.caceres.mt.gov.br/fotos_institucional_downloads/2.pdf",
                 to,
             })
             .catch((err) => this.logger.error('error, message not sent', err));
