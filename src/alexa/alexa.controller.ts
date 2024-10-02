@@ -7,7 +7,7 @@ export class AlexaController {
   constructor(private readonly alexaService: AlexaService) {}
 
   @Post('message')
-  async twilio(@Body() body: AlexaRequestDTO): Promise<any> {
+  async alexa(@Body() body: AlexaRequestDTO): Promise<any> {
     return { message: await this.alexaService.run(body) };
   }
 }

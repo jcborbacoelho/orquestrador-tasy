@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional } from 'class-validator';
 
 export class TwilioRequestDTO {
   @ApiProperty()
@@ -24,4 +25,13 @@ export class TwilioRequestDTO {
 
   @ApiProperty()
   AccountSid: string;
+
+  @IsOptional()
+  MediaContentType0?: string
+
+  @IsOptional()
+  MediaUrl0?: string
+
+  @IsOptional()
+  MessageSid?: string
 }

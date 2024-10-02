@@ -6,6 +6,7 @@ import { WatsonService } from 'src/watson/watson.service';
 import { Twilio } from 'twilio';
 import axios from 'axios';
 import { S3Service } from 'src/watson/s3/s3.service';
+import { TwilioRequestDTO } from './dto/twilio-request.dto';
 const { v4: uuidv4 } = require('uuid');
 
 @Injectable()
@@ -19,7 +20,7 @@ export class TwilioService {
     private readonly s3Service: S3Service,
   ) {}
 
-  async run(body): Promise<any> {
+  async run(body: TwilioRequestDTO): Promise<any> {
     // await this.sendAudio(body.From, body.To, "Apenas testando", body.MessageSid);
     // return;
     try {
@@ -86,10 +87,7 @@ export class TwilioService {
       /**
        * Enviar a resposta do Assistant para a Twilio
        */
-      if (
-        watsonResponse?.output?.generic &&
-        watsonResponse?.output?.generic.length
-      ) {
+      if ( watsonResponse?.output?.generic && watsonResponse?.output?.generic.length ) {
         //SALVA CONTEXTO
         await this.fileService.salvarArquivoJson({
           [userPhoneNumber]: watsonResponse,
@@ -98,18 +96,18 @@ export class TwilioService {
         //TODO subistituir map poor for
         this.logger.log('message delivered');
 
-                let mCounter = 0;
-                for (const message of watsonResponse.output.generic) {
-                    setTimeout(async () => {
-                        if (payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {
-                            await this.sendAudio(body.From, body.To, message.text, body.MessageSid);
-                        } else if (payloadInputUser.type == Constant.BROKER_TYPE_TEXT) {
-                            await this.sendMessage(body.From, body.To, message.text);
-                        }
-                    }, mCounter * 500);
-                    mCounter++;
+        let mCounter = 0;
+        for (const message of watsonResponse.output.generic) {
+            setTimeout(async () => {
+                if (payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {
+                    await this.sendAudio(body.From, body.To, message.text);
+                } else if (payloadInputUser.type == Constant.BROKER_TYPE_TEXT) {
+                    await this.sendMessage(body.From, body.To, message.text);
                 }
-            }
+            }, mCounter * 500);
+            mCounter++;
+        }
+    }
 
       /**
        * Apagar arquivo de audio temporário
