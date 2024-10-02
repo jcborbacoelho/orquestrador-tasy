@@ -10,183 +10,148 @@ const { v4: uuidv4 } = require('uuid');
 
 @Injectable()
 export class TwilioService {
-    private client: Twilio;
-    private logger = new Logger('BrokerTwilioService');
+  private client: Twilio;
+  private logger = new Logger('BrokerTwilioService');
 
-    constructor(
-        private readonly watsonService: WatsonService,
-        private readonly fileService: FileService,
-        private readonly s3Service: S3Service,
-    ) { }
+  constructor(
+    private readonly watsonService: WatsonService,
+    private readonly fileService: FileService,
+    private readonly s3Service: S3Service,
+  ) {}
 
-    async run(body): Promise<any> {
-        // await this.sendAudio(body.From, body.To, "Apenas testando", body.MessageSid);
-        // return;
-        try {
-            this.logger.log('broker started');
+  async run(body): Promise<any> {
+    // await this.sendAudio(body.From, body.To, "Apenas testando", body.MessageSid);
+    // return;
+    try {
+      this.logger.log('broker started');
 
-            //colocar um try catch?
-            const phoneNumber = body.To.replace(/\D/g, '');
-            const userPhoneNumber = body.From.replace(/\D/g, '');
-            const watsonContext = await this.fileService.getByPhoneNumber(
-                userPhoneNumber,
-            );
+      //colocar um try catch?
+      const phoneNumber = body.To.replace(/\D/g, '');
+      const userPhoneNumber = body.From.replace(/\D/g, '');
+      const watsonContext =
+        await this.fileService.getWatsonContextItemFromJsonByCallerId(
+          userPhoneNumber,
+        );
 
-            this.client = new Twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
-            this.logger.log('credentials found:', `phone-number: ${phoneNumber}`);
+      this.client = new Twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH);
+      this.logger.log('credentials found:', `phone-number: ${phoneNumber}`);
+      ////LIMPA CONTEXTOS
+      if (body.Body == '#clear#') {
+        await this.fileService.salvarArquivoJson({});
+        await this.sendMessage(
+          body.From,
+          body.To,
+          'Base de dados reiniciada...',
+        );
 
-            if (body.Body == '#clear#') {
-                await this.fileService.salvarArquivoJson({});
-                await this.sendMessage(
-                    body.From,
-                    body.To,
-                    'Base de dados reiniciada...',
-                );
+        return;
+        ////LIMPA CONTEXTO DO SOLICITANTE
+      } else if (body.Body == '#sair#') {
+        await this.fileService.salvarArquivoJson({});
+        await this.sendMessage(body.From, body.To, 'Contexto apagado...');
 
-                return;
-            } else if (body.Body == '#sair#') {
-                await this.fileService.salvarArquivoJson({});
-                await this.sendMessage(body.From, body.To, 'Contexto apagado...');
+        return;
+      }
+      ////VERIFICA ENTRADA DE TEXTO OU AUDIO OGG
+      let payloadInputUser: { type: string; text: string } = null;
+      if (body.NumMedia == Constant.TWILIO_TYPE_TEXT) {
+        payloadInputUser = {
+          type: Constant.BROKER_TYPE_TEXT,
+          text: body.Body,
+        };
+      } else if (
+        body.NumMedia == Constant.TWILIO_TYPE_FILE &&
+        body.MediaContentType0 == 'audio/ogg'
+      ) {
+        const textOutput: string = await this.watsonService.STT(
+          await this.getAudioBufferFromTwillioURL(body.MediaUrl0),
+        );
 
-                return;
-            }
+        payloadInputUser = {
+          type: Constant.BROKER_TYPE_AUDIO,
+          text: textOutput?.trim(),
+        };
+      }
 
-            let payloadInputUser = null;
-            if (body.NumMedia == Constant.TWILIO_TYPE_TEXT) {
-                payloadInputUser = {
-                    type: Constant.BROKER_TYPE_TEXT,
-                    text: body.Body,
-                };
-            } else if ( body.NumMedia == Constant.TWILIO_TYPE_FILE && body.MediaContentType0 == 'audio/ogg' ) {
-                const textOutput = await this.watsonService.STT(
-                    await this.getAudioBufferFromTwillioURL(body.MediaUrl0),
-                );
+      /**
+       * Consultar Assistant
+       */
+      const watsonResponse: any =
+        await this.watsonService.sendAssistantMessageWithContext(
+          watsonContext,
+          userPhoneNumber,
+          payloadInputUser.text,
+        );
 
-                payloadInputUser = {
-                    type: Constant.BROKER_TYPE_AUDIO,
-                    text: textOutput.trim(),
-                };
-            }
+      /**
+       * Enviar a resposta do Assistant para a Twilio
+       */
+      if (
+        watsonResponse?.output?.generic &&
+        watsonResponse?.output?.generic.length
+      ) {
+        //SALVA CONTEXTO
+        await this.fileService.salvarArquivoJson({
+          [userPhoneNumber]: watsonResponse,
+        });
 
-            /**
-             * Consultar Assistant
-             */
-            await this.watsonService.createInstance();
-            let watsonPayload = null;
-
-            const setor = await this.getSetor(payloadInputUser.text)
-
-            if (watsonContext) {
-                watsonContext.context.skills['actions skill'].skill_variables = {
-                    ...watsonContext.context.skills['actions skill'].skill_variables,
-                    ...setor
-                }                
-
-                watsonPayload = {
-                    user_id: userPhoneNumber,
-                    session_id: watsonContext.context.global.session_id,
-                    context: watsonContext.context,
-                };
-            } else {
-                watsonPayload = {
-                    session_id: await this.watsonService.createSession(),
-                    context: {
-                        skills: {
-                            "actions skill": {
-                                skill_variables: setor
-                            }
-                        }
-                    }
-                };
-            }
-
-            let watsonResponse = await this.watsonService.message(
-                payloadInputUser.text,
-                watsonPayload,
-            );
-
-            if (watsonResponse?.code === Constant.WATSON_EXPIRED_SESSION) {
-                watsonPayload.session_id = await this.watsonService.createSession();
-                watsonResponse = await this.watsonService.message(
-                    payloadInputUser.text,
-                    watsonPayload,
-                );
-            }
-
-            
-            /**
-             * Enviar a resposta do Assistant para a Twilio
-             */
-            if (watsonResponse?.output?.generic && watsonResponse?.output?.generic.length) {
-                await this.fileService.salvarArquivoJson({
-                    [userPhoneNumber]: watsonResponse,
-                });
-
-                //TODO subistituir map poor for
-                this.logger.log('message delivered');
+        //TODO subistituir map poor for
+        this.logger.log('message delivered');
 
                 let mCounter = 0;
                 for (const message of watsonResponse.output.generic) {
                     setTimeout(async () => {
-                        if(message && message.text) {
-                            if (payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {
-                                await this.sendAudio(body.From, body.To, message.text);
-                            } else if (payloadInputUser.type == Constant.BROKER_TYPE_TEXT) {
-                                await this.sendMessage(body.From, body.To, message.text);
-                            }
+                        if (payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {
+                            await this.sendAudio(body.From, body.To, message.text, body.MessageSid);
+                        } else if (payloadInputUser.type == Constant.BROKER_TYPE_TEXT) {
+                            await this.sendMessage(body.From, body.To, message.text);
                         }
                     }, mCounter * 500);
                     mCounter++;
                 }
-            } else {
-                await this.sendMessage(
-                    body.From,
-                    body.To,
-                    'Não consegui encontrar nada. Reformule sua frase e tente novamente.',
-                );
             }
 
-            /**
-             * Apagar arquivo de audio temporário
-             */
-        } catch (e) {
-            this.logger.error(e);
-        }
+      /**
+       * Apagar arquivo de audio temporário
+       */
+    } catch (e) {
+      this.logger.error(e);
     }
+  }
 
-    async getAudioBufferFromTwillioURL(audioUrl: string): Promise<Buffer> {
-        try {
-            // Download the audio file
-            const response = await axios.get(audioUrl, {
-                headers: {
-                    Authorization:
-                        'Basic ' +
-                        Buffer.from(
-                            `${process.env.TWILIO_SID}:${process.env.TWILIO_AUTH}`,
-                        ).toString('base64'),
-                },
-                responseType: 'arraybuffer', // Get the response as an ArrayBuffer
-            });
-            // Create a Buffer from the response data
-            const audioBuffer = Buffer.from(response.data);
-            return audioBuffer;
-        } catch (error) {
-            console.error('Error downloading audio:', error);
-            throw error;
-        }
+  async getAudioBufferFromTwillioURL(audioUrl: string): Promise<Buffer> {
+    try {
+      // Download the audio file
+      const response = await axios.get(audioUrl, {
+        headers: {
+          Authorization:
+            'Basic ' +
+            Buffer.from(
+              `${process.env.TWILIO_SID}:${process.env.TWILIO_AUTH}`,
+            ).toString('base64'),
+        },
+        responseType: 'arraybuffer', // Get the response as an ArrayBuffer
+      });
+      // Create a Buffer from the response data
+      const audioBuffer = Buffer.from(response.data);
+      return audioBuffer;
+    } catch (error) {
+      console.error('Error downloading audio:', error);
+      throw error;
     }
-    async streamToFile(readableStream, fileName) {
-        // Create a response from the ReadableStream
-        const response = new Response(readableStream);
+  }
+  async streamToFile(readableStream, fileName) {
+    // Create a response from the ReadableStream
+    const response = new Response(readableStream);
 
-        // Convert the response to a Blob
-        const blob = await response.blob();
+    // Convert the response to a Blob
+    const blob = await response.blob();
 
-        // Create a file from the Blob
-        const file = new File([blob], fileName, { type: blob.type });
+    // Create a file from the Blob
+    const file = new File([blob], fileName, { type: blob.type });
 
-        return file;
-    }
+    return file;
+  }
 
     //Germano TODO: Função problemática //2 problemas: aceite do arquivo e tranformacao do arquivo
     async sendAudio(to: string, from: string, textInput: string) {
@@ -200,38 +165,36 @@ export class TwilioService {
         try {
             const url = `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_SID}/Messages.json`;
 
-            const data = new URLSearchParams();
-            data.append('From', from);
-            data.append('To', to);
-            data.append(
-              'MediaUrl',
-              urlSpeakOutputStream,
-            );
+      const data = new URLSearchParams();
+      data.append('From', from);
+      data.append('To', to);
+      data.append('MediaUrl', urlSpeakOutputStream);
 
-            const response = await fetch(url, {
-              method: 'POST',
-              headers: {
-                Authorization:
-                  'Basic ' +
-                  btoa(`${process.env.TWILIO_SID}:${process.env.TWILIO_AUTH}`),
-                'Content-Type': 'audio/ogg; codecs=opus',
-              },
-              body: data,
-            });
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization:
+            'Basic ' +
+            btoa(`${process.env.TWILIO_SID}:${process.env.TWILIO_AUTH}`),
+          'Content-Type': 'audio/ogg; codecs=opus',
+        },
+        body: data,
+      });
 
-            if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(
-                `Error sending message: ${response.status} ${errorText}`,
-              );
-            }
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Error sending message: ${response.status} ${errorText}`,
+        );
+      }
 
-            const responseData = await response.json();
-            console.log('Message sent successfully:', responseData);
-        } catch(err) {
-            console.error(err)
-        }
+      const responseData = await response.json();
+      console.log('Message sent successfully:', responseData);
+    } catch (err) {
+      console.error(err);
     }
+  }
+
 
     async sendMessage(to: string, from: string, message: string) {
         this.client.messages

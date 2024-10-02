@@ -6,10 +6,10 @@ export class FileService {
   private path = './src/file/temp/database.json';
 
   // Função para ler o arquivo JSON
-  async getAll() {
+  async getAllJson(): Promise<any> {
     try {
       const data = fs.readFileSync(this.path, 'utf-8'); // Lê o arquivo
-      const response = JSON.parse(data); // Converte o JSON em objeto
+      const response: any = JSON.parse(data); // Converte o JSON em objeto
 
       return response;
     } catch (err) {
@@ -18,12 +18,12 @@ export class FileService {
     }
   }
 
-  async getByPhoneNumber(userPhoneNumber) {
+  async getWatsonContextItemFromJsonByCallerId(callerId): Promise<any> {
     try {
-      const response = await this.getAll();
+      const response = await this.getAllJson();
 
-      if (response[userPhoneNumber]) {
-        return response[userPhoneNumber];
+      if (response[callerId]) {
+        return response[callerId];
       }
 
       return null;
@@ -35,7 +35,7 @@ export class FileService {
 
   async deletarItemJson(userPhoneNumber) {
     try {
-      const allData = await this.getAll();
+      const allData = await this.getAllJson();
 
       if (allData[userPhoneNumber]) {
         delete allData[userPhoneNumber];
@@ -52,7 +52,7 @@ export class FileService {
 
   async salvarArquivoJson(objectContext) {
     try {
-      let allData = await this.getAll();
+      let allData = await this.getAllJson();
       const key = Object.keys(objectContext)[0];
       const value = Object.values(objectContext)[0];
 
