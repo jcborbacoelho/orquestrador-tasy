@@ -26,10 +26,7 @@ export class S3Service {
         try {
             const data = await cos.upload(params).promise();
 
-            console.log("IBM S3")
-            console.log(data)
-
-            return `https://${params.Bucket}.${this.config.endpoint}/${params.Key}`; // URL pública do arquivo
+            return data.Location // URL pública do arquivo
         } catch (err) {
             console.error('Erro ao fazer upload no IBM Cloud Object Storage:', err);
             throw err;

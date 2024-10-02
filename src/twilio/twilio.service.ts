@@ -6,6 +6,7 @@ import { WatsonService } from 'src/watson/watson.service';
 import { Twilio } from 'twilio';
 import axios from 'axios';
 import { S3Service } from 'src/watson/s3/s3.service';
+const { v4: uuidv4 } = require('uuid');
 
 @Injectable()
 export class TwilioService {
@@ -73,7 +74,14 @@ export class TwilioService {
             await this.watsonService.createInstance();
             let watsonPayload = null;
 
+            const setor = await this.getSetor(payloadInputUser.text)
+
             if (watsonContext) {
+                watsonContext.context.skills['actions skill'].skill_variables = {
+                    ...watsonContext.context.skills['actions skill'].skill_variables,
+                    ...setor
+                }                
+
                 watsonPayload = {
                     user_id: userPhoneNumber,
                     session_id: watsonContext.context.global.session_id,
@@ -82,6 +90,13 @@ export class TwilioService {
             } else {
                 watsonPayload = {
                     session_id: await this.watsonService.createSession(),
+                    context: {
+                        skills: {
+                            "actions skill": {
+                                skill_variables: setor
+                            }
+                        }
+                    }
                 };
             }
 
@@ -97,6 +112,7 @@ export class TwilioService {
                     watsonPayload,
                 );
             }
+
             
             /**
              * Enviar a resposta do Assistant para a Twilio
@@ -112,14 +128,22 @@ export class TwilioService {
                 let mCounter = 0;
                 for (const message of watsonResponse.output.generic) {
                     setTimeout(async () => {
-                        if (payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {
-                            await this.sendAudio(body.From, body.To, message.text, body.MessageSid);
-                        } else if (payloadInputUser.type == Constant.BROKER_TYPE_TEXT) {
-                            await this.sendMessage(body.From, body.To, message.text);
+                        if(message && message.text) {
+                            if (payloadInputUser.type == Constant.BROKER_TYPE_AUDIO) {
+                                await this.sendAudio(body.From, body.To, message.text);
+                            } else if (payloadInputUser.type == Constant.BROKER_TYPE_TEXT) {
+                                await this.sendMessage(body.From, body.To, message.text);
+                            }
                         }
                     }, mCounter * 500);
                     mCounter++;
                 }
+            } else {
+                await this.sendMessage(
+                    body.From,
+                    body.To,
+                    'Não consegui encontrar nada. Reformule sua frase e tente novamente.',
+                );
             }
 
             /**
@@ -165,12 +189,14 @@ export class TwilioService {
     }
 
     //Germano TODO: Função problemática //2 problemas: aceite do arquivo e tranformacao do arquivo
-    async sendAudio(to: string, from: string, textInput: string, messageId: string) {
+    async sendAudio(to: string, from: string, textInput: string) {
         const speakOutputStream: ReadableStream = await this.watsonService.TTS(
           textInput,
         );
+        const filename = uuidv4()
 
-        const urlSpeakOutputStream = await this.s3Service.uploadFile(speakOutputStream, messageId)
+        const urlSpeakOutputStream = await this.s3Service.uploadFile(speakOutputStream, filename.toString())
+
         try {
             const url = `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_SID}/Messages.json`;
 
@@ -215,5 +241,34 @@ export class TwilioService {
                 to,
             })
             .catch((err) => this.logger.error('error, message not sent', err));
+    }
+
+    async getSetor(input: string) {
+        const match = input.match(/setor\s([a-zA-Z])/i);
+
+        if(match) {
+            const nomeSetor = match[1].toUpperCase();
+
+            return await this.getCodeSetor(nomeSetor)
+        }
+
+        return {}
+    }
+
+    async getCodeSetor(dsSetor: string) {
+        switch(dsSetor.toUpperCase()) {
+            case 'A':
+                return {setorA: true}
+            break;
+            case 'B':
+                return {setorB: true}
+            break;
+            case 'C':
+                return {setorC: true}
+            break;
+            case 'ONCOLOGIA':
+                return {setorOncologia: true}
+            break;
+        }
     }
 }
